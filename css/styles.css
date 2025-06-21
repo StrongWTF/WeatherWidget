@@ -1,0 +1,29 @@
+:root {
+	--txtSize: ;
+	--txtColor: ;
+	--wBack: ;
+	--wBorder: ;
+}
+
+.weather-box {
+	background: rgb(0 0 0 / 50%) !important;
+	color: var(--txtColor);
+	/*border: var(--wBorder) solid #000;*/
+	border-radius: 16px;
+	text-align: center;
+	font-family: Comfortaa, cursive;
+	/*font-weight: bold;*/
+	background: var(--wBack);
+	font-size: var(--txtSize);
+	padding-left: 38px;
+	padding-right: 38px;
+	padding-top: 20px;
+	padding-bottom: 20px;
+	/*padding: 18px;*/
+	position: absolute;
+	margin: 30px;
+}
+
+body {
+	background: rgba(0, 0, 0, 0);
+}

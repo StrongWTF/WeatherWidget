@@ -1,0 +1,126 @@
+<!doctype html>
+<!--
+weatherWidget with time overlay for OBS
+Author: Norman Gholson IV 2022-2023
+requires free private API Key from OpenWeatherMap.org
+https://openweathermap.org/
+-->
+<html>
+
+<head>
+	<script>var weatherVersion; var weatherFriendly;</script>
+	<script src="https://g4billiards.com/ver.js"></script>
+	<link rel="stylesheet" href="css/styles.css">
+	<script src="js/jquery.js"></script>
+	<script src="js/settings.js"></script>
+	<link href="https://fonts.googleapis.com/css?family=Didact+Gothic|Comfortaa:400,700&subset=latin,cyrillic" rel='stylesheet'/> 
+</head>
+
+<body>
+	<script>
+		var wVer = 101;
+		if (weatherVersion > wVer && localStorage.getItem(wVer + "." + weatherVersion + "update") != 1 && autoCheckUpdates == true) {
+			if (confirm("g4Weather v" + weatherFriendly + " Update Available. Please visit:\nhttps://github.com/ngholson/obs_weather_time_overlay\nClick 'CANCEL' to hide future notifications about this update") != true) {
+				localStorage.setItem(wVer + "." + weatherVersion + "update", 1);
+			}
+		}
+	</script>
+	
+	<span class="weather-box" id="id-weather"></span><br>
+	
+	<script>
+		var language = window.navigator.userLanguage || window.navigator.language;
+		const regionTranslate = new Intl.DisplayNames([language], { type: 'region' });
+		document.querySelector(':root').style.setProperty('--txtSize', textSize); document.querySelector(':root').style.setProperty('--txtColor', textColor);
+		document.querySelector(':root').style.setProperty('--wBack', weatherBackground);
+		document.querySelector(':root').style.setProperty('--wBorder', weatherBorder + "px");
+		refreshData();
+
+		// Function to convert a string to proper case
+		function toProperCase(str) {
+			return str.replace(/\w\S*/g, function (txt) {
+				return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+			});
+		}
+
+
+		function weatherCheck() {
+			var time = time24hour != true ? currentTime(new Date()) : time24(new Date());
+			$.ajax({
+				url: 'https://api.openweathermap.org/data/2.5/weather',
+				data: { units: `${yourUnits}`, q: `${yourCity}`, appid: `${yourApiKey}`, lang: `${language}` },
+				dataType: 'json',
+				success: function (apiResponse) {
+					if (dynamicBackground == 1) {
+						if (apiResponse.weather[0].icon.slice(2) == "n") { document.querySelector(':root').style.setProperty('--wBack', "linear-gradient(to bottom, black , dimgrey"); document.querySelector(':root').style.setProperty('--txtColor', "white"); }
+						else { document.querySelector(':root').style.setProperty('--wBack', "linear-gradient(to bottom, skyblue ," + weatherBackground); document.querySelector(':root').style.setProperty('--txtColor', "black"); }
+					}
+
+					var weatherDescription = toProperCase(apiResponse.weather[0].description);
+					var curtemp = Math.round(apiResponse.main.temp);
+					var wimg = "./img/pack" + "/" + apiResponse.weather[0].icon + ".png";
+					$.ajax({
+						url: 'http://api.openweathermap.org/geo/1.0/direct',
+						data: { q: `${yourCity}`, appid: `${yourApiKey}` },
+						dataType: 'json',
+						success: function (geoResponse) {
+
+							if (geoResponse[0].country.toLowerCase() != "us") {
+								if (geoResponse[0].state == apiResponse.name || geoResponse[0].state == null) {
+									geoResponse[0].state = regionTranslate.of(geoResponse[0].country);
+								}
+							}
+							if (weatherDisplay.toLowerCase() == "temp") {
+								if (weatherIcons == 1) { document.getElementById("id-weather").innerHTML = `<img style='height: ${iconHeight};' src=${wimg}> ${curtemp}&deg;`; return; }
+								document.getElementById("id-weather").innerHTML = `${curtemp}&deg;`; return;
+							}
+							if (weatherDisplay.toLowerCase() == "time") { document.getElementById("id-weather").innerHTML = `${time}`; return; }
+							if (weatherDisplay.toLowerCase() == "simple") {
+								if (weatherIcons == 1) { document.getElementById("id-weather").innerHTML = `${curtemp}&deg; <img style='height: ${iconHeight};' src=${wimg}> ${time}`; return; }
+								document.getElementById("id-weather").innerHTML = `${curtemp}&deg;  ${time}`; return;
+							}
+							if (weatherDisplay.toLowerCase() == "weather") {
+								if (weatherIcons == 1) {
+									document.getElementById("id-weather").innerHTML = `${geoResponse[0].name}, ${geoResponse[0].state}: ${curtemp}&deg; <img style='height: ${iconHeight};' src=${wimg}> ${weatherDescription}`;
+								} else { document.getElementById("id-weather").innerHTML = `${geoResponse[0].name}, ${geoResponse[0].state}: ${curtemp}&deg; \/ ${weatherDescription}`; }
+								return;
+							}
+							//start of full
+							/*if (weatherIcons == 1) {
+								document.getElementById("id-weather").innerHTML = `${geoResponse[0].name}, ${geoResponse[0].state}: ${curtemp}&deg; <img style='height: ${iconHeight};' src=${wimg}> ${weatherDescription} ${clockSeperator} ${time}`;*/
+							/*if (weatherIcons == 1) {
+								document.getElementById("id-weather").innerHTML = `${geoResponse[0].name}, ${geoResponse[0].state} | ${curtemp}&deg; <img style='height: ${iconHeight};' src=${wimg}> | ${weatherDescription} | ${clockSeperator} ${time}`;*/
+							if (weatherIcons == 1) {
+								document.getElementById("id-weather").innerHTML = `${clockSeperator} ${time} &ensp; | &ensp; ${geoResponse[0].name}, ${geoResponse[0].state} &ensp; | &ensp; ${curtemp}&deg; <img style='height: ${iconHeight};' src=${wimg}>`;
+							} else { document.getElementById("id-weather").innerHTML = `${geoResponse[0].name}, ${geoResponse[0].state}: ${curtemp}&deg; \/ ${weatherDescription} ${clockSeperator} ${time}`; }
+						}
+					});
+				}
+			});
+		}
+		function currentTime(date) {
+			var hours = date.getHours();
+			var minutes = date.getMinutes();
+			var isAmPm = hours >= 12 ? 'PM' : 'AM';
+			hours = hours % 12;
+			hours = hours ? hours : 12;
+			minutes = minutes < 10 ? '0' + minutes : minutes;
+			var curTime = hours + ':' + minutes + ' ' + isAmPm;
+			return curTime;
+		}
+		function time24(date) {
+			var hours = date.getHours();
+			var minutes = date.getMinutes();
+			hours = hours < 10 ? '0' + hours : hours;
+			minutes = minutes < 10 ? '0' + minutes : minutes;
+			var curTime24 = hours + ':' + minutes;
+			return curTime24;
+		}
+		function refreshData() {
+			weatherCheck();
+			setTimeout(refreshData, 10000);
+		}
+	</script>
+</body>
+
+</html>
